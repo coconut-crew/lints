@@ -8,12 +8,12 @@ const visitor = require(`@std/syntax/visitor`)
 
 const lint_name = `prefer_const_function`
 const lint_message = `use 'const function' instead.`
-const lint_severity = `warning`
+const lint_severity: lint_types.severity = `warning`
 
 const walker = visitor.create()
 const walker_violations: { lint_types.LintViolation } = {}
 local walker_source_lines: { string } = {}
-local walker_source_path: path.Pathlike
+local walker_source_path: path.Path
 
 -- lute prints `const function` as `local function`
 -- so we gotta do this cursed shit
