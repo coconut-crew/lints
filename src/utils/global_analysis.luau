@@ -58,7 +58,7 @@ const function reference_global_data(node: syntax.CstExprGlobal): Global
 		assign_count = 0,
 		min_scope = scope,
 		max_scope = scope,
-		forward_declared = false,
+		forward_declared = true,
 	}
 	globals[global_name] = created
 	table.insert(state.ordered_globals, created)
@@ -74,37 +74,39 @@ function walker.visitExprGlobal(node)
 	return true
 end
 
-const function process_assignment(node: syntax.CstExpr, compound_assignment: boolean): ()
+const function process_assignment(node: syntax.CstExpr, declaration: boolean): ()
 	if node.tag ~= "global" then
 		return
 	end
 
+	const is_new = state.globals[node.name.text] == nil
 	const global = reference_global_data(node)
 
-	const assign_count = global.assign_count + 1
-	global.assign_count = assign_count
+	global.assign_count += 1
 
-	if assign_count == 1 and (not compound_assignment or global.first_ref ~= node) then
-		global.forward_declared = true
+	if is_new and declaration then
+		global.forward_declared = false
 	end
 end
 
 function walker.visitStatAssign(node)
 	for _, variable in node.variables do
-		process_assignment(variable, false)
+		process_assignment(variable, true)
 	end
 
 	return true
 end
 
 function walker.visitStatCompoundAssign(node)
-	process_assignment(node.variable, true)
+	-- undefined globals emit a type and runtime error already,
+	-- so a compound assignment shouldn't count as the definition
+	process_assignment(node.variable, false)
 
 	return true
 end
 
 function walker.visitStatFunction(node)
-	process_assignment(node.name, false)
+	process_assignment(node.name, true)
 
 	return true
 end
