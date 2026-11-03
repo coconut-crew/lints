@@ -30,6 +30,11 @@ local foo = function()
     -- attempt to call nil value
     foo()
 end
+
+local a
+type function foo()
+	-- 'a' is not in scope as a variable here
+end
 ```
 ]=]
 export type SyntaxScope = {
@@ -69,10 +74,6 @@ function walker.visitExpr(node)
 	state.expr_scopes[node] = state.parent_scope
 
 	return true
-end
-
-function walker.visitStatTypeFunction()
-	return false
 end
 
 const function visit_statements(block: syntax.CstStatBlock): ()
