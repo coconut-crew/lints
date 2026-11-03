@@ -47,6 +47,11 @@ export type SyntaxScope = {
 	read start_id: number,
 	--- the id representing the furthest descendant of this scope
 	final_id: number,
+
+	--- whether this scope can run its children more than once
+	read unstable: boolean,
+	--- nearest ancestor (or self) that runs at most once
+	read stable_superscope: SyntaxScope,
 }
 
 export type ScopeAnalysis = {
@@ -66,6 +71,7 @@ const function create_state(block: syntax.CstStat)
 		statement_location = block.location,
 		parent_scope = nil :: SyntaxScope?,
 		expr_scopes = {} :: { [syntax.CstExpr]: SyntaxScope? },
+		unstable_blocks = {} :: { [syntax.CstStatBlock]: true },
 	}
 end
 local state: typeof(create_state(...))
@@ -75,6 +81,14 @@ function walker.visitExpr(node)
 
 	return true
 end
+
+const function visit_unstable(node)
+	state.unstable_blocks[node.body] = true
+	return true
+end
+
+walker.visitStatWhile, walker.visitStatFor, walker.visitStatForIn, walker.visitExprFunction =
+	visit_unstable, visit_unstable, visit_unstable, visit_unstable
 
 const function visit_statements(block: syntax.CstStatBlock): ()
 	for _, statement in block.statements do
@@ -98,7 +112,9 @@ const function visit_scope(
 	const beginning_statement_location = state.statement_location
 
 	const parent_scope = state.parent_scope
-	const scope_object: SyntaxScope = {
+	const unstable = repeat_stat ~= false or state.unstable_blocks[block] == true
+
+	const scope_object = {
 		parent = parent_scope,
 		begin_line = beginning_statement_location.beginLine,
 		begin_column = beginning_statement_location.beginColumn,
@@ -106,7 +122,19 @@ const function visit_scope(
 		depth = this_depth,
 		start_id = this_id,
 		final_id = this_id,
+
+		unstable = unstable,
+		stable_superscope = nil :: any,
 	}
+
+	const stable_superscope: SyntaxScope = if parent_scope == nil
+		then scope_object
+		elseif -- not all nodes with a mismatched superscope are unstable intrinsically
+			unstable or parent_scope.stable_superscope ~= parent_scope
+		then parent_scope.stable_superscope
+		else scope_object
+
+	scope_object.stable_superscope = stable_superscope
 
 	state.ordered_scopes[this_id] = scope_object
 	state.scope_map[block] = scope_object
