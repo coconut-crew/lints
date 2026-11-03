@@ -45,7 +45,7 @@ export type SyntaxScope = {
 	read depth: number,
 	--- the id representing this scope
 	read start_id: number,
-	--- the id representing the final scope which is part of this one
+	--- the id representing the furthest descendant of this scope
 	final_id: number,
 }
 
