@@ -10,7 +10,6 @@ export type Global = {
 	max_scope: scope_analysis.SyntaxScope,
 
 	assign_count: number,
-	definition_span: syntax.Span?,
 }
 
 export type GlobalAnalysis = {
@@ -72,7 +71,7 @@ function walker.visitExprGlobal(node)
 	return true
 end
 
-const function process_assignment(node: syntax.CstExpr, register_definition: boolean): ()
+const function process_assignment(node: syntax.CstExpr): ()
 	if node.tag ~= "global" then
 		return
 	end
@@ -80,33 +79,24 @@ const function process_assignment(node: syntax.CstExpr, register_definition: boo
 	const global = reference_global_data(node)
 
 	global.assign_count += 1
-	if register_definition and not global.definition_span then
-		global.definition_span = node.location
-	end
 end
 
 function walker.visitStatAssign(node)
 	for _, variable in node.variables do
-		process_assignment(variable, true)
+		process_assignment(variable)
 	end
 
 	return true
 end
 
 function walker.visitStatCompoundAssign(node)
-	process_assignment(
-		node.variable,
-		-- undefined globals emit a type and runtime error already,
-		-- so a compound assignment shouldn't count as the definition
-		-- for the global
-		false
-	)
+	process_assignment(node.variable)
 
 	return true
 end
 
 function walker.visitStatFunction(node)
-	process_assignment(node.name, true)
+	process_assignment(node.name)
 
 	return true
 end
