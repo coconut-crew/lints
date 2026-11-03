@@ -10,6 +10,9 @@ export type Global = {
 	max_scope: scope_analysis.SyntaxScope,
 
 	assign_count: number,
+	--- whether the variable's first reference is different from its
+	--- first declaration
+	forward_declared: boolean,
 }
 
 export type GlobalAnalysis = {
@@ -55,6 +58,7 @@ const function reference_global_data(node: syntax.CstExprGlobal): Global
 		assign_count = 0,
 		min_scope = scope,
 		max_scope = scope,
+		forward_declared = false,
 	}
 	globals[global_name] = created
 	table.insert(state.ordered_globals, created)
@@ -70,32 +74,37 @@ function walker.visitExprGlobal(node)
 	return true
 end
 
-const function process_assignment(node: syntax.CstExpr): ()
+const function process_assignment(node: syntax.CstExpr, compound_assignment: boolean): ()
 	if node.tag ~= "global" then
 		return
 	end
 
 	const global = reference_global_data(node)
 
-	global.assign_count += 1
+	const assign_count = global.assign_count + 1
+	global.assign_count = assign_count
+
+	if assign_count == 1 and (not compound_assignment or global.first_ref ~= node) then
+		global.forward_declared = true
+	end
 end
 
 function walker.visitStatAssign(node)
 	for _, variable in node.variables do
-		process_assignment(variable)
+		process_assignment(variable, false)
 	end
 
 	return true
 end
 
 function walker.visitStatCompoundAssign(node)
-	process_assignment(node.variable)
+	process_assignment(node.variable, true)
 
 	return true
 end
 
 function walker.visitStatFunction(node)
-	process_assignment(node.name)
+	process_assignment(node.name, false)
 
 	return true
 end
