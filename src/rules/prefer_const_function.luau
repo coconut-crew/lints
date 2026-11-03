@@ -1,5 +1,3 @@
--- ai generated code
-
 const fs = require(`@std/fs`)
 const lint_types = require(`@lint`)
 const path = require(`@std/path`)
