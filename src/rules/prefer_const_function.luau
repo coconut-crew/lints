@@ -6,72 +6,70 @@ const path = require(`@std/path`)
 const syntax = require(`@std/syntax`)
 const visitor = require(`@std/syntax/visitor`)
 
-const name = `prefer_const_function`
-const message = `Local function declarations are forbidden; use 'const function' instead.`
-const severity: lint_types.severity = `warning`
+const lint_name = `prefer_const_function`
+const lint_message = `use 'const function' instead.`
+const lint_severity = `warning`
 
---[=[
-	ai generated implementation
-]=]
-const function lint(
+const walker = visitor.create()
+const walker_violations: { lint_types.LintViolation } = {}
+local walker_source_lines: { string } = {}
+local walker_source_path: path.Pathlike
+
+-- lute prints `const function` as `local function`
+-- so we gotta do this cursed shit
+const function is_local(statement: syntax.CstStatLocalFunction): boolean
+	const location = statement.localKeyword.location
+
+	const line = walker_source_lines[location.beginLine]
+	if not line then
+		return false
+	end
+
+	return string.sub(line, location.beginColumn, location.endColumn - 1) == `local`
+end
+
+function walker.visitStatLocalFunction(node)
+	if is_local(node) then
+		table.insert(walker_violations, {
+			lintname = lint_name,
+			location = node.localKeyword.location,
+			message = lint_message,
+			severity = lint_severity,
+			sourcepath = walker_source_path,
+			suggestedfix = {
+				fix = `const`,
+			},
+		})
+	end
+
+	return true
+end
+
+const function prefer_const_function(
 	cst: syntax.CstStatBlock,
 	sourcepath: path.Path?,
 	_context: lint_types.RuleContext
 ): { lint_types.LintViolation }
-	const violations: { lint_types.LintViolation } = {}
-	local source_lines: { string }?
-	const walker = visitor.create()
-
-	-- Lute currently normalizes both `local function` and `const function`
-	-- to CstStatLocalFunction, including the keyword token text. Consult the
-	-- original source when it is available so fixed declarations stay clean.
-	--[=[
-		ai generated implementation
-	]=]
-	const function has_local_keyword(statement: syntax.CstStatLocalFunction): boolean
-		if sourcepath == nil then
-			return true
-		end
-		if source_lines == nil then
-			source_lines = string.split(fs.readFileToString(sourcepath), `\n`)
-		end
-
-		const lines = (assert)(source_lines)
-		const location = statement.localKeyword.location
-		const line = lines[location.beginLine]
-		return line ~= nil
-			and string.sub(line, location.beginColumn, location.endColumn - 1)
-				== `local`
+	if not sourcepath then
+		return {}
 	end
 
-	--[=[
-		ai generated implementation
-	]=]
-	walker.visitStatLocalFunction = function(
-		statement: syntax.CstStatLocalFunction
-	): boolean
-		if has_local_keyword(statement) then
-			table.insert(violations, {
-				lintname = name,
-				location = statement.localKeyword.location,
-				message = message,
-				severity = severity,
-				sourcepath = sourcepath,
-				suggestedfix = {
-					fix = `const`,
-				},
-			})
-		end
-		return true
-	end
+	walker_source_path = sourcepath
+
+	const source = fs.readFileToString(sourcepath)
+	walker_source_lines = string.split(source, "\n")
 
 	visitor.visitBlock(cst, walker)
+	const violations = table.clone(walker_violations)
+
+	table.clear(walker_violations)
+
 	return violations
 end
 
 const rule: lint_types.LintRule = {
-	name = name,
-	lint = lint,
+	name = lint_name,
+	lint = prefer_const_function,
 }
 
 return table.freeze(rule)
