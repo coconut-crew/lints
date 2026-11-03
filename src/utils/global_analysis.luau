@@ -53,7 +53,6 @@ const function reference_global_data(node: syntax.CstExprGlobal): Global
 		name = global_name,
 		first_ref = node,
 		assign_count = 0,
-		declaration_span = nil,
 		min_scope = scope,
 		max_scope = scope,
 	}
