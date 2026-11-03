@@ -5,6 +5,7 @@ return {
 			lute = "~/.lute/typedefs/1.0.1/lute",
 			batteries = "../.lute/batteries",
 			tests = "../tests",
+			lint = `@std/commands/lint/types/`,
 		},
 	},
 }
