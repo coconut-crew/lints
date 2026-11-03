@@ -6,6 +6,7 @@ return {
 			batteries = "../.lute/batteries",
 			tests = "../tests",
 			lint = `@std/commands/lint/types/`,
+			utils = `./utils/`,
 		},
 	},
 }
