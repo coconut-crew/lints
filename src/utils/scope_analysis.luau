@@ -50,7 +50,10 @@ export type ScopeAnalysis = {
 }
 
 const walker = visitor.create()
-const function create_state(stat: syntax.CstStat)
+const function create_state(
+	stat: syntax.CstStat,
+	visit_expr: nil | (syntax.CstExpr) -> ()
+)
 	return {
 		depth = 0,
 		scope_id = 0,
@@ -59,9 +62,19 @@ const function create_state(stat: syntax.CstStat)
 		-- this determines the begin_line and begin_column of a scope
 		statement_location = stat.location,
 		parent_scope = nil :: SyntaxScope?,
+		visit_expr = visit_expr,
 	}
 end
 local state: typeof(create_state(...))
+
+function walker.visitExpr(node)
+	const fn = state.visit_expr
+	if fn then
+		fn(node)
+	end
+
+	return true
+end
 
 function walker.visitStatTypeFunction()
 	return false
@@ -135,8 +148,13 @@ end
 
 const scope_analysis = {}
 
-function scope_analysis.analyze_block(block: syntax.CstStatBlock): ScopeAnalysis
-	state = create_state(block)
+function scope_analysis.analyze_block(
+	block: syntax.CstStatBlock,
+	-- todo(design): maybe we could do some cooler built-in stuff for
+	-- scope analysis but for now this should be enough
+	visit_expr: nil | (syntax.CstExpr) -> ()
+): ScopeAnalysis
+	state = create_state(block, visit_expr)
 
 	visitor.visitBlock(block, walker)
 
