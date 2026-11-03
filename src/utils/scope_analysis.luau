@@ -47,13 +47,11 @@ export type SyntaxScope = {
 export type ScopeAnalysis = {
 	read scope_map: { read [syntax.CstStatBlock]: SyntaxScope? },
 	read ordered_scopes: { read [number]: SyntaxScope },
+	read expr_scopes: { read [syntax.CstExpr]: SyntaxScope? },
 }
 
 const walker = visitor.create()
-const function create_state(
-	stat: syntax.CstStat,
-	visit_expr: nil | (syntax.CstExpr) -> ()
-)
+const function create_state(stat: syntax.CstStat)
 	return {
 		depth = 0,
 		scope_id = 0,
@@ -62,16 +60,13 @@ const function create_state(
 		-- this determines the begin_line and begin_column of a scope
 		statement_location = stat.location,
 		parent_scope = nil :: SyntaxScope?,
-		visit_expr = visit_expr,
+		expr_scopes = {} :: { [syntax.CstExpr]: SyntaxScope? },
 	}
 end
 local state: typeof(create_state(...))
 
 function walker.visitExpr(node)
-	const fn = state.visit_expr
-	if fn then
-		fn(node)
-	end
+	state.expr_scopes[node] = state.parent_scope
 
 	return true
 end
@@ -148,19 +143,15 @@ end
 
 const scope_analysis = {}
 
-function scope_analysis.analyze_block(
-	block: syntax.CstStatBlock,
-	-- todo(design): maybe we could do some cooler built-in stuff for
-	-- scope analysis but for now this should be enough
-	visit_expr: nil | (syntax.CstExpr) -> ()
-): ScopeAnalysis
-	state = create_state(block, visit_expr)
+function scope_analysis.analyze_block(block: syntax.CstStatBlock): ScopeAnalysis
+	state = create_state(block)
 
 	visitor.visitBlock(block, walker)
 
 	return {
 		ordered_scopes = state.ordered_scopes,
 		scope_map = state.scope_map,
+		expr_scopes = state.expr_scopes,
 	}
 end
 
