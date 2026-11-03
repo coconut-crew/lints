@@ -51,14 +51,14 @@ export type ScopeAnalysis = {
 }
 
 const walker = visitor.create()
-const function create_state(stat: syntax.CstStat)
+const function create_state(block: syntax.CstStat)
 	return {
 		depth = 0,
 		scope_id = 0,
 		ordered_scopes = {} :: { SyntaxScope },
 		scope_map = {} :: { [syntax.CstStatBlock]: SyntaxScope? },
 		-- this determines the begin_line and begin_column of a scope
-		statement_location = stat.location,
+		statement_location = block.location,
 		parent_scope = nil :: SyntaxScope?,
 		expr_scopes = {} :: { [syntax.CstExpr]: SyntaxScope? },
 	}
