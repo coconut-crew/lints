@@ -5,66 +5,12 @@
 
 const lint_types = require(`@lint`)
 const path = require(`@std/path`)
+const service_names = require("../data/service_names")
 const syntax = require(`@std/syntax`)
 const visitor = require(`@std/syntax/visitor`)
 
 const name = `prefer_get_service`
 const severity: lint_types.severity = `warning`
--- Explicit names avoid treating DataModel properties, methods, or arbitrary children as services.
-const service_names: { [string]: boolean } = {
-	AnalyticsService = true,
-	AssetService = true,
-	AvatarEditorService = true,
-	BadgeService = true,
-	Chat = true,
-	CollectionService = true,
-	ContentProvider = true,
-	ContextActionService = true,
-	DataStoreService = true,
-	Debris = true,
-	EncodingService = true,
-	GamepadService = true,
-	GroupService = true,
-	GuiService = true,
-	HapticService = true,
-	HttpService = true,
-	InsertService = true,
-	Lighting = true,
-	LocalizationService = true,
-	LogService = true,
-	MarketplaceService = true,
-	MaterialService = true,
-	MemoryStoreService = true,
-	MessagingService = true,
-	PathfindingService = true,
-	PhysicsService = true,
-	Players = true,
-	PolicyService = true,
-	ProximityPromptService = true,
-	ReplicatedFirst = true,
-	ReplicatedStorage = true,
-	RunService = true,
-	ServerScriptService = true,
-	ServerStorage = true,
-	SocialService = true,
-	SoundService = true,
-	StarterGui = true,
-	StarterPack = true,
-	StarterPlayer = true,
-	Stats = true,
-	Teams = true,
-	TeleportService = true,
-	TestService = true,
-	TextChatService = true,
-	TextService = true,
-	TweenService = true,
-	UserInputService = true,
-	UserService = true,
-	VRService = true,
-	VoiceChatService = true,
-	Workspace = true,
-}
-table.freeze(service_names)
 
 type Reference = { service: string, location: syntax.Span }
 type ServiceBinding = { binding: syntax.CstLocal, location: syntax.Span }
